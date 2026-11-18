@@ -19,9 +19,7 @@ jobs:
 
   # JOB 1: Build and test
   build-and-test:
-
     name: Build and Test
-
     runs-on: ubuntu-latest
 
     steps:
@@ -52,14 +50,15 @@ jobs:
 
   # JOB 2: Build and publish Docker image
   publish-docker-image:
-
     name: Build and Publish Docker Image
-
     needs: build-and-test
 
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
 
     runs-on: ubuntu-latest
+
+    outputs:
+      image: ${{ steps.image.outputs.image }}
 
     steps:
       - name: Checkout source code
@@ -85,6 +84,13 @@ jobs:
             type=sha,prefix=sha-,format=short
             type=ref,event=branch
 
+      - name: Set deployment image reference
+        id: image
+        shell: bash
+        run: |
+          IMAGE="ghcr.io/shubhammishra1998/product-api-cicd-poc:sha-${GITHUB_SHA::7}"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -94,3 +100,42 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # JOB 3: Deploy after manual approval
+  deploy-local:
+    name: Deploy to Local Rancher Desktop
+
+    needs: publish-docker-image
+
+    runs-on: [self-hosted, Windows, X64, rancher]
+
+    environment:
+      name: local-deployment
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Deploy using Blue-Green strategy
+        shell: pwsh
+        run: |
+          $image = "${{ needs.publish-docker-image.outputs.image }}"
+
+          Write-Host "Starting Blue-Green deployment"
+          Write-Host "Image: $image"
+
+          .\scripts\deploy-blue-green.ps1 -Image $image
+
+      - name: Verify application through Nginx
+        shell: pwsh
+        run: |
+          $response = Invoke-RestMethod `
+            -Uri "http://localhost:8081/actuator/health" `
+            -TimeoutSec 10
+
+          if ($response.status -ne "UP") {
+              throw "Application health verification failed"
+          }
+
+          Write-Host "Deployment verification successful!"
+          Write-Host "Application status: $($response.status)"
