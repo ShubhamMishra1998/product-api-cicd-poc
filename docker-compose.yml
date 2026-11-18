@@ -1,0 +1,31 @@
+
+services:
+
+  # Blue environment
+  product-api-blue:
+    image: ${PRODUCT_API_IMAGE:-ghcr.io/shubhammishra1998/product-api-cicd-poc:sha-a7dd529}
+    container_name: product-api-blue
+    restart: unless-stopped
+    expose:
+      - "8080"
+
+  # Green environment
+  product-api-green:
+    image: ${PRODUCT_API_IMAGE:-ghcr.io/shubhammishra1998/product-api-cicd-poc:sha-a7dd529}
+    container_name: product-api-green
+    restart: unless-stopped
+    expose:
+      - "8080"
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: product-api-nginx
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - product-api-blue
+      - product-api-green

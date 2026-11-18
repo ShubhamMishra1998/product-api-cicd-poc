@@ -1,0 +1,36 @@
+
+name: Local Runner - Docker Verification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-runner:
+    name: Verify Local Rancher Runner
+
+    runs-on: [self-hosted, Windows, X64, rancher]
+
+    steps:
+      - name: Check runner
+        shell: powershell
+        run: |
+          Write-Host "Local Rancher Runner is working"
+
+      - name: Verify Docker CLI
+        shell: powershell
+        run: docker --version
+
+      - name: Verify Docker Compose
+        shell: powershell
+        run: docker compose version
+
+      - name: Verify Docker daemon
+        shell: powershell
+        run: docker info
+
+      - name: List running containers
+        shell: powershell
+        run: docker ps
