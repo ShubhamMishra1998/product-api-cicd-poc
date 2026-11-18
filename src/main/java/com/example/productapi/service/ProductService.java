@@ -17,6 +17,11 @@ public class ProductService {
         this.productRepository = productRepository;
     }
 
+    /**
+     * Creates a new product based on the provided request.
+     * @param request
+     * @return
+     */
     public ProductResponse createProduct(CreateProductRequest request) {
 
         Product product = new Product(
