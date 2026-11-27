@@ -34,6 +34,11 @@ public class ProductController {
         return productService.getProductById(id);
     }
 
+    @GetMapping("/name")
+    public String getApplicationName() {
+        return "Product API";
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteProduct(@PathVariable Long id) {
